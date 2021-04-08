@@ -1,0 +1,25 @@
+{
+    "name": "vlnic/slimness-http",
+    "description": "slim http client based on guzzlehttp",
+    "version": "0.0.1",
+    "type": "package",
+    "license": "MIT",
+    "keywords": ["uuid", "identifier", "guid"],
+    "autoload": {
+        "psr-4": {
+            "Vlnic\\Slimness\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Vlnic\\Slimness\\Test\\": "tests/"
+        }
+    },
+    "require": {
+        "guzzlehttp/guzzle": "^7.0",
+        "ext-json": "*"
+    }
+}
