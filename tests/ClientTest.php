@@ -40,6 +40,9 @@ class ClientTest extends TestCase
             })->postJson('http://some.local', []);
     }
 
+    /**
+     * @return array[]
+     */
     public function dataProvider() : array
     {
         $mock = $this->mockClient();

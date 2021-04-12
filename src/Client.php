@@ -30,7 +30,7 @@ class Client
     /**
      * @var array
      */
-    private array $options = [];
+    private array $options;
 
     /**
      * @var int
