@@ -58,6 +58,11 @@ class Client
     private ?Closure $authHandler = null;
 
     /**
+     * @var ResponseInterface|null
+     */
+    private ?ResponseInterface $lastResponse = null;
+
+    /**
      * Client constructor.
      */
     public function __construct()
@@ -95,7 +100,7 @@ class Client
      * Метод для того чтобы установить условие при котором запрос будет повторно вызван
      * принимает функцию, которое принимает тело ответа, в последствии должно вернуть значение
      * булевого типа прим.
-     * function (array $body) : bool {
+     * function (Client $body) : bool {
      *   return key_exists('key', $body);
      * }
      *
@@ -152,14 +157,9 @@ class Client
      * @param array $data
      * @return array
      */
-    public function postJson(string $url, array $data = []) : array
+    public function postJson(string $url, array $data = []) : self
     {
-        $resp = $this->handleJsonResponse($this->request('POST', new Uri($url), ['json' => $data]));
-        if ($this->isRetry($resp)) {
-            $this->handleRetry();
-            return $this->postJson($url, $data);
-        }
-        return $resp;
+        return $this->request('POST', new Uri($url), ['json' => $data]);
     }
 
     /**
@@ -170,12 +170,9 @@ class Client
     public function getJson(string $url, array $query = []) : array
     {
         $this->headers = array_merge($this->headers, ['Accept' => 'application/json']);
-        $resp = $this->handleJsonResponse($this->request('GET', new Uri($url), ['query' => $query]));
-        if ($this->isRetry($resp)) {
-            $this->handleRetry();
-            return $this->getJson($url, $query);
-        }
-        return $resp;
+        $resp = $this->request('GET', new Uri($url), ['query' => $query]);
+
+        return $this->handleJsonResponse($resp->getResponse()->getBody());
     }
 
     /**
@@ -184,10 +181,15 @@ class Client
      * @param array $params
      * @return ResponseInterface
      */
-    protected function request(string $method, Uri $uri, array $params): ResponseInterface
+    protected function request(string $method, Uri $uri, array $params): self
     {
         try {
-            return $this->client->request($method, $uri, array_merge($params, ['headers' => $this->headers], $this->options));
+            $this->lastResponse = $this->client->request($method, $uri, array_merge($params, ['headers' => $this->headers], $this->options));
+
+            if ($this->isRetry($this)) {
+                $this->handleRetry();
+                return $this->request($method, $uri, $params);
+            }
         } catch (GuzzleException $e) {
             if (401 === $e->getCode() && is_callable($this->authHandler)) {
                 call_user_func($this->authHandler);
@@ -199,6 +201,7 @@ class Client
             }
             call_user_func($this->errorHandler, $e->getCode(), $e->getMessage(), $e);
         }
+        return $this;
     }
 
     /**
@@ -217,10 +220,18 @@ class Client
         sleep($this->retryTimeout);
     }
 
-    private function isRetry($data) : bool
+    private function isRetry(Client $client) : bool
     {
         return null !== $this->retry
             && $this->retry > 0
-            && call_user_func($this->retryState, $data);
+            && call_user_func($this->retryState, $client);
+    }
+
+    /**
+     * @return ResponseInterface|null
+     */
+    public function getResponse(): ?ResponseInterface
+    {
+        return $this->lastResponse;
     }
 }
