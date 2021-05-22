@@ -8,12 +8,17 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\ResponseInterface;
+use SplFileInfo;
 use Throwable;
 use Vlnic\Slimness\Exceptions\ClientException;
+use Vlnic\Slimness\Response\Facade;
 
 /**
  * Class Client
  * @package Vlnic\Slimness
+ *
+ * @method array jsonResponse()
+ * @method SplFileInfo fileResponse()
  */
 class Client
 {
@@ -220,6 +225,10 @@ class Client
         sleep($this->retryTimeout);
     }
 
+    /**
+     * @param Client $client
+     * @return bool
+     */
     private function isRetry(Client $client) : bool
     {
         return null !== $this->retry
@@ -233,5 +242,14 @@ class Client
     public function getResponse(): ?ResponseInterface
     {
         return $this->lastResponse;
+    }
+
+    /**
+     * @param $name
+     * @return ResponseInterface
+     */
+    public function __call($name)
+    {
+        return Facade::handleCall($name, $this->lastResponse);
     }
 }

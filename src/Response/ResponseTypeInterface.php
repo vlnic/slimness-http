@@ -5,10 +5,10 @@ namespace Vlnic\Slimness\Response;
 use Psr\Http\Message\ResponseInterface;
 
 /**
- * Interface ResponseTypeIntreface
+ * Interface ResponseTypeInterface
  * @package Vlnic\Slimness\Response
  */
-interface ResponseTypeIntreface
+interface ResponseTypeInterface
 {
     /**
      * @param ResponseInterface $r
@@ -21,4 +21,9 @@ interface ResponseTypeIntreface
      * @return mixed
      */
     public function handle(ResponseInterface $r);
+
+    /**
+     * @return string
+     */
+    public static function methodName() : string;
 }

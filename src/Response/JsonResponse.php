@@ -8,7 +8,7 @@ use Psr\Http\Message\ResponseInterface;
  * Class JsonResponse
  * @package Vlnic\Slimness\Response
  */
-class JsonResponse implements ResponseTypeIntreface
+class JsonResponse implements ResponseTypeInterface
 {
     /**
      * @param ResponseInterface $r
@@ -29,8 +29,16 @@ class JsonResponse implements ResponseTypeIntreface
         return json_decode(
             $r->getBody(),
             true,
-            512,
+            1024,
             JSON_OBJECT_AS_ARRAY
-        );
+        ) ?? [];
+    }
+
+    /**
+     * @return string
+     */
+    public static function methodName(): string
+    {
+        return 'jsonResponse';
     }
 }

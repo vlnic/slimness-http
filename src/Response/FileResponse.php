@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Vlnic\Slimness\Response;
 
 use Psr\Http\Message\ResponseInterface;
@@ -10,7 +9,7 @@ use SplFileInfo;
  * Class FileResponse
  * @package Vlnic\Slimness\Response
  */
-class FileResponse implements ResponseTypeIntreface
+class FileResponse implements ResponseTypeInterface
 {
     /**
      * @param ResponseInterface $r
@@ -53,5 +52,10 @@ class FileResponse implements ResponseTypeIntreface
             'application/json',
             'text/json',
         ];
+    }
+
+    public static function methodName(): string
+    {
+        return 'fileResponse';
     }
 }
