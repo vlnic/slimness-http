@@ -2,6 +2,7 @@
 
 namespace Vlnic\Slimness\Test;
 
+use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
@@ -47,10 +48,17 @@ class ClientTest extends TestCase
     {
         $mock = $this->mockClient();
         $childClient = new class ($mock) extends Client {
-            public function __construct(Client $client)
+            protected ClientInterface $client;
+
+            public function __construct(\GuzzleHttp\Client $client)
             {
                 parent::__construct();
                 $this->client = $client;
+            }
+
+            public function buildClient(): ClientInterface
+            {
+                return $this->client;
             }
         };
         return [
@@ -63,7 +71,7 @@ class ClientTest extends TestCase
      */
     protected function mockClient() : MockObject
     {
-        return $this->getMockBuilder(Client::class)
+        return $this->getMockBuilder(\GuzzleHttp\Client::class)
             ->addMethods(['request'])
             ->getMock();
     }

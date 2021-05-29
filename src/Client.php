@@ -8,8 +8,10 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Uri;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UriInterface;
 use SplFileInfo;
 use Throwable;
+use Vlnic\Slimness\Builder\ClientInterface as SlimnessClient;
 use Vlnic\Slimness\Exceptions\ClientException;
 use Vlnic\Slimness\Response\Facade;
 
@@ -20,7 +22,7 @@ use Vlnic\Slimness\Response\Facade;
  * @method array jsonResponse()
  * @method SplFileInfo fileResponse()
  */
-class Client
+class Client implements SlimnessClient
 {
     /**
      * @var Closure
@@ -48,11 +50,6 @@ class Client
     private array $headers = [];
 
     /**
-     * @var ClientInterface|\GuzzleHttp\Client
-     */
-    protected ClientInterface $client;
-
-    /**
      * @var int
      */
     private int $retry = 1;
@@ -72,7 +69,6 @@ class Client
      */
     public function __construct()
     {
-        $this->client = new \GuzzleHttp\Client();
         $this->ifError(function (int $code, string $body, Throwable $exception) {
             throw new ClientException(
                 sprintf(
@@ -164,7 +160,7 @@ class Client
      */
     public function postJson(string $url, array $data = []) : self
     {
-        return $this->request('POST', new Uri($url), ['json' => $data]);
+        return $this->request(static::METHOD_POST, new Uri($url), ['json' => $data]);
     }
 
     /**
@@ -175,9 +171,9 @@ class Client
     public function getJson(string $url, array $query = []) : array
     {
         $this->headers = array_merge($this->headers, ['Accept' => 'application/json']);
-        $resp = $this->request('GET', new Uri($url), ['query' => $query]);
+        $this->request(static::METHOD_GET, new Uri($url), ['query' => $query]);
 
-        return $this->handleJsonResponse($resp->getResponse()->getBody());
+        return Facade::handleCall('jsonResponse', $this->lastResponse);
     }
 
     /**
@@ -186,10 +182,10 @@ class Client
      * @param array $params
      * @return ResponseInterface
      */
-    protected function request(string $method, Uri $uri, array $params): self
+    public function request(string $method, UriInterface $uri, array $params): self
     {
         try {
-            $this->lastResponse = $this->client->request($method, $uri, array_merge($params, ['headers' => $this->headers], $this->options));
+            $this->lastResponse = $this->buildClient()->request($method, $uri, $params);
 
             if ($this->isRetry($this)) {
                 $this->handleRetry();
@@ -202,7 +198,7 @@ class Client
                 return $this->request($method, $uri, $params);
             }
             if ($e instanceof RequestException && $e->hasResponse()) {
-                call_user_func($this->errorHandler, $e->getResponse()->getStatusCode(), $e->getResponse()->getBody(), $e);
+                call_user_func($this->errorHandler, $e->getResponse()->getStatusCode(), (string) $e->getResponse()->getBody(), $e);
             }
             call_user_func($this->errorHandler, $e->getCode(), $e->getMessage(), $e);
         }
@@ -251,5 +247,13 @@ class Client
     public function __call($name)
     {
         return Facade::handleCall($name, $this->lastResponse);
+    }
+
+    /**
+     * @return ClientInterface
+     */
+    protected function buildClient() : ClientInterface
+    {
+        return new \GuzzleHttp\Client(array_merge(['headers' => $this->headers], $this->options));
     }
 }
