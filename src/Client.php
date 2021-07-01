@@ -205,15 +205,6 @@ class Client implements SlimnessClient
         return $this;
     }
 
-    /**
-     * @param ResponseInterface $response
-     * @return array
-     */
-    private function handleJsonResponse(ResponseInterface $response) : array
-    {
-        return json_decode((string) $response->getBody(), true, 512, JSON_OBJECT_AS_ARRAY) ?? [];
-    }
-
 
     private function handleRetry() : void
     {
